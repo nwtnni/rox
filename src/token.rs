@@ -1,8 +1,8 @@
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum T {
     Ident(String),
     String(String),
-    Number(i64),
+    Number(f64),
 
     LParen,
     RParen,
