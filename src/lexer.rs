@@ -1,6 +1,9 @@
 use std::iter;
 use std::str;
 
+use anyhow::anyhow;
+use anyhow::Context as _;
+
 use crate::span;
 use crate::token;
 
@@ -34,7 +37,9 @@ impl<'s> Iterator for T<'s> {
         let (_, character) = self.peek();
 
         match character {
-        | Some(character) if is_ident_head(character) => { todo!() }
+        | Some(character) if is_ident_head(character) => Some(Ok(self.lex_ident())),
+        | Some(character) if is_number(character) => Some(self.lex_number()),
+        | Some('.') if self.peek().1.map_or(false, is_number) => Some(self.lex_number()),
 
         | _ => todo!(),
         }
@@ -43,12 +48,42 @@ impl<'s> Iterator for T<'s> {
 
 impl<'s> T<'s> {
 
+    fn lex_number(&mut self) -> anyhow::Result<(span::T, token::T)> {
+        let (lo, _) = self.next();
+
+        // Only allow a single dot
+        let mut dot = false;
+
+        let hi = loop {
+            match (self.peek(), dot) {
+            | ((_, Some(character)), _) if is_number(character) => {
+                self.next();
+            }
+            | ((_, Some('.')), false) => {
+                dot = true;
+                self.next();
+            }
+            | ((hi, _), _) => break hi,
+            }
+        };
+
+        let span = span::T { lo, hi };
+        let text = &self.text[lo.idx..hi.idx];
+
+        text.parse::<f64>()
+            .map_err(anyhow::Error::from)
+            .with_context(|| anyhow!("Could not lex number at {}: '{}'", span, text))
+            .map(|number| (span, token::T::Number(number)))
+    }
+
     fn lex_ident(&mut self) -> (span::T, token::T) {
         let (lo, _) = self.next();
 
         let hi = loop {
             match self.peek() {
-            | (_, Some(character)) if is_ident_tail(character) => { self.next(); },
+            | (_, Some(character)) if is_ident_tail(character) => {
+                self.next();
+            }
             | (hi, _) => break hi,
             }
         };
@@ -183,4 +218,8 @@ fn is_ident_head(c: char) -> bool {
 
 fn is_ident_tail(c: char) -> bool {
     c.is_ascii_alphanumeric() || c == '_'
+}
+
+fn is_number(c: char) -> bool {
+    c.is_ascii_digit()
 }

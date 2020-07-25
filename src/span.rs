@@ -1,7 +1,15 @@
+use std::fmt;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct T {
     pub lo: Loc,
     pub hi: Loc,
+}
+
+impl fmt::Display for T {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{}-{}", self.lo, self.hi)
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -26,5 +34,11 @@ impl Loc {
             row: self.row,
             col: self.col + 1,
         }
+    }
+}
+
+impl fmt::Display for Loc {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{}:{}", self.row, self.col)
     }
 }
