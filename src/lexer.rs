@@ -34,20 +34,41 @@ impl<'s> Iterator for T<'s> {
 
         self.skip();
 
-        let (_, character) = self.peek();
+        let (span, character) = self.peek();
 
-        match character {
-        | Some(character) if is_ident_head(character) => Some(Ok(self.lex_ident())),
-        | Some(character) if is_number(character) => Some(self.lex_number()),
-        | Some('.') if self.peek().1.map_or(false, is_number) => Some(self.lex_number()),
+        match character? {
+        | character if is_ident_head(character) => Some(Ok(self.lex_ident())),
+        | character if is_number(character) => Some(self.lex_number()),
+        | '.' if self.peeeek().map_or(false, is_number) => Some(self.lex_number()),
 
-        | _ => todo!(),
+        | '(' => Some(Ok(self.lex_single_symbol(token::T::LParen))),
+        | ')' => Some(Ok(self.lex_single_symbol(token::T::RParen))),
+        | '{' => Some(Ok(self.lex_single_symbol(token::T::LBrace))),
+        | '}' => Some(Ok(self.lex_single_symbol(token::T::RBrace))),
+        | ',' => Some(Ok(self.lex_single_symbol(token::T::Comma))),
+        | '.' => Some(Ok(self.lex_single_symbol(token::T::Dot))),
+        | '-' => Some(Ok(self.lex_single_symbol(token::T::Minus))),
+        | '+' => Some(Ok(self.lex_single_symbol(token::T::Plus))),
+        | ';' => Some(Ok(self.lex_single_symbol(token::T::Semicolon))),
+        | '/' => Some(Ok(self.lex_single_symbol(token::T::Slash))),
+        | '*' => Some(Ok(self.lex_single_symbol(token::T::Star))),
+
+        | '!' if self.peeeek().map_or(false, |c| c == '=') => Some(Ok(self.lex_double_symbol(token::T::Ne))),
+        | '=' if self.peeeek().map_or(false, |c| c == '=') => Some(Ok(self.lex_double_symbol(token::T::EqEq))),
+        | '<' if self.peeeek().map_or(false, |c| c == '=') => Some(Ok(self.lex_double_symbol(token::T::Le))),
+        | '>' if self.peeeek().map_or(false, |c| c == '=') => Some(Ok(self.lex_double_symbol(token::T::Ge))),
+
+        | '!' => Some(Ok(self.lex_single_symbol(token::T::Not))),
+        | '=' => Some(Ok(self.lex_single_symbol(token::T::Eq))),
+        | '<' => Some(Ok(self.lex_single_symbol(token::T::Lt))),
+        | '>' => Some(Ok(self.lex_single_symbol(token::T::Gt))),
+
+        | character => Some(Err(anyhow!("Unexpected character: {:?} at {}", character, span))),
         }
     }
 }
 
 impl<'s> T<'s> {
-
     fn lex_number(&mut self) -> anyhow::Result<(span::T, token::T)> {
         let (lo, _) = self.next();
 
@@ -111,6 +132,20 @@ impl<'s> T<'s> {
 
         (span, token)
     }
+
+    fn lex_single_symbol(&mut self, token: token::T) -> (span::T, token::T) {
+        let (lo, _) = self.next();
+        let (hi, _) = self.peek();
+        (span::T { lo, hi }, token)
+    }
+
+    fn lex_double_symbol(&mut self, token: token::T) -> (span::T, token::T) {
+        let (lo, _) = self.next();
+        let _ = self.next();
+        let (hi, _) = self.peek();
+        (span::T { lo, hi }, token)
+    }
+
 
     /// Skip past whitespace and comments.
     fn skip(&mut self) {
