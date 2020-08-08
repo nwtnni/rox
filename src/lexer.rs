@@ -40,6 +40,7 @@ impl<'s> Iterator for T<'s> {
         | character if is_ident_head(character) => Some(Ok(self.lex_ident())),
         | character if is_number(character) => Some(self.lex_number()),
         | '.' if self.peeeek().map_or(false, is_number) => Some(self.lex_number()),
+        | '"' => Some(self.lex_string()),
 
         | '(' => Some(Ok(self.lex_single_symbol(token::T::LParen))),
         | ')' => Some(Ok(self.lex_single_symbol(token::T::RParen))),
@@ -131,6 +132,29 @@ impl<'s> T<'s> {
         };
 
         (span, token)
+    }
+
+    fn lex_string(&mut self) -> anyhow::Result<(span::T, token::T)> {
+        let (lo, _) = self.next();
+        let (hi, _) = loop {
+            match self.peek() {
+            | (_, Some('"')) => {
+                self.next();
+                break self.peek();
+            }
+            | (_, Some(_)) => {
+                self.next();
+            }
+            | (hi, None) => {
+                return Err(anyhow!("Unterminated string literal: {}", span::T { lo, hi }));
+            }
+            }
+        };
+
+        Ok((
+            span::T { lo, hi },
+            token::T::String(self.text[lo.idx + 1..hi.idx - 1].to_owned()),
+        ))
     }
 
     fn lex_single_symbol(&mut self, token: token::T) -> (span::T, token::T) {
