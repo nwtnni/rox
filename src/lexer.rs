@@ -1,11 +1,27 @@
 use std::iter;
+use std::num;
 use std::str;
-
-use anyhow::anyhow;
-use anyhow::Context as _;
 
 use crate::span;
 use crate::token;
+
+#[derive(thiserror::Error)]
+#[derive(Clone, Debug)]
+pub enum Error {
+    #[error("[{}]: unexpected character: {:?}", _0, _1)]
+    UnexpectedChar(span::Loc, char),
+
+    #[error("[{}]: invalid number literal '{}'", span, text)]
+    InvalidNumber {
+        #[source]
+        source: num::ParseFloatError,
+        span: span::T,
+        text: String,
+    },
+
+    #[error("[{}]: unterminated string literal '{}'", _0, _1)]
+    UnterminatedString(span::T, String),
+}
 
 /// Stateful lexer.
 ///
@@ -29,7 +45,7 @@ pub struct T<'s> {
 }
 
 impl<'s> Iterator for T<'s> {
-    type Item = anyhow::Result<(span::T, token::T)>;
+    type Item = Result<(span::T, token::T), Error>;
     fn next(&mut self) -> Option<Self::Item> {
 
         self.skip();
@@ -64,13 +80,13 @@ impl<'s> Iterator for T<'s> {
         | '<' => Some(Ok(self.lex_single_symbol(token::T::Lt))),
         | '>' => Some(Ok(self.lex_single_symbol(token::T::Gt))),
 
-        | character => Some(Err(anyhow!("Unexpected character: {:?} at {}", character, span))),
+        | character => Some(Err(Error::UnexpectedChar(span, character))),
         }
     }
 }
 
 impl<'s> T<'s> {
-    fn lex_number(&mut self) -> anyhow::Result<(span::T, token::T)> {
+    fn lex_number(&mut self) -> Result<(span::T, token::T), Error> {
         let (lo, _) = self.next();
 
         // Only allow a single dot
@@ -93,8 +109,7 @@ impl<'s> T<'s> {
         let text = &self.text[lo.idx..hi.idx];
 
         text.parse::<f64>()
-            .map_err(anyhow::Error::from)
-            .with_context(|| anyhow!("Could not lex number at {}: '{}'", span, text))
+            .map_err(|source| Error::InvalidNumber { source, span, text: text.to_owned() })
             .map(|number| (span, token::T::Number(number)))
     }
 
@@ -134,7 +149,7 @@ impl<'s> T<'s> {
         (span, token)
     }
 
-    fn lex_string(&mut self) -> anyhow::Result<(span::T, token::T)> {
+    fn lex_string(&mut self) -> Result<(span::T, token::T), Error> {
         let (lo, _) = self.next();
         let (hi, _) = loop {
             match self.peek() {
@@ -146,7 +161,10 @@ impl<'s> T<'s> {
                 self.next();
             }
             | (hi, None) => {
-                return Err(anyhow!("Unterminated string literal: {}", span::T { lo, hi }));
+                return Err(Error::UnterminatedString(
+                    span::T { lo, hi },
+                    String::from(&self.text[lo.idx..])
+                ));
             }
             }
         };
