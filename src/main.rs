@@ -37,7 +37,16 @@ struct Scanner {
 }
 impl Scanner {
     fn scan_tokens(self) -> Vec<Token> {
-        todo!()
+        let mut iter = self.source.char_indices().peekable();
+        let mut tokens = Vec::new();
+        while let Some((byte, char)) = iter.next() {
+            match char {
+                '(' => tokens.push(Token::LeftParen),
+                ')' => tokens.push(Token::RightParen),
+                _ => {}
+            }
+        }
+        tokens
     }
 }
 
@@ -67,6 +76,7 @@ fn run(source: String) {
 //   }
 // }
 #[derive(Debug)]
+#[allow(unused)]
 enum Token {
     // Single-character tokens.
     LeftParen,
