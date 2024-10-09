@@ -1,4 +1,5 @@
 use std::env;
+use std::iter;
 use std::process;
 
 fn main() {
@@ -20,7 +21,7 @@ fn main() {
 // }
 fn run_file(path: String) {
     let source = std::fs::read_to_string(&path).unwrap();
-    run(source);
+    run(source)
 }
 
 //  private static void run(String source) {
@@ -32,35 +33,85 @@ fn run_file(path: String) {
 //      System.out.println(token);
 //    }
 //  }
-struct Scanner {
-    source: String,
+struct Scanner<'source> {
+    iter: iter::Peekable<std::str::CharIndices<'source>>,
 }
-impl Scanner {
-    fn scan_tokens(self) -> Vec<Token> {
-        let mut iter = self.source.char_indices().peekable();
-        let mut tokens = Vec::new();
-        while let Option::Some((byte, char)) = iter.next() {
-            match char {
-                '(' => tokens.push(Token::LeftParen),
-                ')' => tokens.push(Token::RightParen),
-                '>' => match iter.peek() {
-                    Some((_, '=')) => {
-                        iter.next();
-                        tokens.push(Token::GreaterEqual);
-                    }
-                    Some(_) | None => tokens.push(Token::Greater),
-                },
 
-                _ => {}
-            }
+impl<'source> Scanner<'source> {
+    fn new(source: &'source str) -> Self {
+        Self {
+            iter: source.char_indices().peekable(),
+        }
+    }
+
+    fn scan(&mut self) -> Vec<Token> {
+        let mut tokens = Vec::new();
+        while let Option::Some((_, char)) = self.iter.next() {
+            let token = match char {
+                ' ' | '\n' | '\t' => continue,
+                '(' => Token::LeftParen,
+                ')' => Token::RightParen,
+                '!' => self.scan_double('=', Token::Bang, Token::BangEqual),
+                '>' => self.scan_double('=', Token::Greater, Token::GreaterEqual),
+                '<' => self.scan_double('=', Token::Less, Token::LessEqual),
+                '=' => self.scan_double('=', Token::Equal, Token::EqualEqual),
+
+                n @ ('0'..='9' | '.') => {
+                    let mut nums = String::new();
+                    nums.push(n);
+                    while let Option::Some((_, char)) = self.iter.peek().copied() {
+                        match char {
+                            n2 @ ('0'..='9' | '.') => {
+                                self.iter.next();
+                                nums.push(n2);
+                            }
+                            _ => break,
+                        }
+                    }
+
+                    if nums == "." {
+                        Token::Dot
+                    } else {
+                        Token::Number(nums.parse().unwrap())
+                    }
+                }
+
+                '\"' => {
+                    let mut buffer = String::new();
+                    while let Option::Some((_, char)) = self.iter.next() {
+                        if char != '\"' {
+                            buffer.push(char)
+                        } else {
+                            break;
+                        }
+                    }
+                    Token::String(buffer)
+                }
+
+                _ => todo!(),
+            };
+
+            tokens.push(token);
         }
         tokens
+    }
+
+    fn scan_double(&mut self, next: char, single: Token, double: Token) -> Token {
+        if let Option::Some((_, char)) = self.iter.next() {
+            if char == next {
+                double
+            } else {
+                single
+            }
+        } else {
+            single
+        }
     }
 }
 
 fn run(source: String) {
-    let scanner = Scanner { source };
-    let tokens = scanner.scan_tokens();
+    let mut scanner = Scanner::new(&source);
+    let tokens = scanner.scan();
     for token in tokens {
         println!("{token:?}");
     }
