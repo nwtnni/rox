@@ -39,10 +39,18 @@ impl Scanner {
     fn scan_tokens(self) -> Vec<Token> {
         let mut iter = self.source.char_indices().peekable();
         let mut tokens = Vec::new();
-        while let Some((byte, char)) = iter.next() {
+        while let Option::Some((byte, char)) = iter.next() {
             match char {
                 '(' => tokens.push(Token::LeftParen),
                 ')' => tokens.push(Token::RightParen),
+                '>' => match iter.peek() {
+                    Some((_, '=')) => {
+                        iter.next();
+                        tokens.push(Token::GreaterEqual);
+                    }
+                    Some(_) | None => tokens.push(Token::Greater),
+                },
+
                 _ => {}
             }
         }
