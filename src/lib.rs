@@ -1,6 +1,4 @@
-use std::env;
 use std::iter;
-use std::process;
 
 // private static void runFile(String path) throws IOException {
 //    byte[] bytes = Files.readAllBytes(Paths.get(path));
@@ -20,18 +18,18 @@ pub fn run_file(path: String) {
 //      System.out.println(token);
 //    }
 //  }
-struct Scanner<'source> {
+pub struct Scanner<'source> {
     iter: iter::Peekable<std::str::CharIndices<'source>>,
 }
 
 impl<'source> Scanner<'source> {
-    fn new(source: &'source str) -> Self {
+    pub fn new(source: &'source str) -> Self {
         Self {
             iter: source.char_indices().peekable(),
         }
     }
 
-    fn scan(&mut self) -> Vec<Token> {
+    pub fn scan(&mut self) -> Vec<Token> {
         let mut tokens = Vec::new();
         while let Option::Some((_, char)) = self.iter.next() {
             let token = match char {
@@ -73,6 +71,41 @@ impl<'source> Scanner<'source> {
                         }
                     }
                     Token::String(buffer)
+                }
+
+                n @ ('a'..='z' | '_') => {
+                    let mut str = String::new();
+                    str.push(n);
+                    while let Option::Some((_, char)) = self.iter.peek().copied() {
+                        match char {
+                            'a'..='z' | '0'..='9' | '_' => {
+                                self.iter.next();
+                                str.push(char);
+                            }
+
+                            _ => break,
+                        }
+                    }
+
+                    match str.as_str() {
+                        "and" => Token::And,
+                        "class" => Token::Class,
+                        "else" => Token::Else,
+                        "false" => Token::False,
+                        "fun" => Token::Fun,
+                        "for" => Token::For,
+                        "if" => Token::If,
+                        "nil" => Token::Nil,
+                        "or" => Token::Or,
+                        "print" => Token::Print,
+                        "return" => Token::Return,
+                        "super" => Token::Super,
+                        "this" => Token::This,
+                        "true" => Token::True,
+                        "var" => Token::Var,
+                        "while" => Token::While,
+                        _ => Token::Identifier(str),
+                    }
                 }
 
                 _ => todo!(),
@@ -123,7 +156,7 @@ fn run(source: String) {
 // }
 #[derive(Debug)]
 #[allow(unused)]
-enum Token {
+pub enum Token {
     // Single-character tokens.
     LeftParen,
     RightParen,

@@ -1,0 +1,13 @@
+---
+source: tests/snapshot.rs
+expression: tokens
+input_file: tests/lex/number.rox
+---
+[
+    Number(
+        123.0,
+    ),
+    Number(
+        45.0,
+    ),
+]
