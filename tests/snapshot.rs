@@ -1,6 +1,6 @@
 use std::fs;
 
-use rox::Scanner;
+use rox::lex::Scanner;
 
 #[test]
 fn lex() {
