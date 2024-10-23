@@ -1,4 +1,5 @@
 pub mod lex;
+pub mod parse;
 
 // private static void runFile(String path) throws IOException {
 //    byte[] bytes = Files.readAllBytes(Paths.get(path));
