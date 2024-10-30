@@ -27,7 +27,13 @@ impl<'source> Scanner<'source> {
                 ' ' | '\n' | '\t' => continue,
                 '(' => Token::LeftParen,
                 ')' => Token::RightParen,
+                ',' => Token::Comma,
+                '-' => Token::Minus,
+                '+' => Token::Plus,
+                ';' => Token::Semicolon,
+                '/' => Token::Slash,
                 '*' => Token::Star,
+
                 '!' => self.scan_double('=', Token::Bang, Token::BangEqual),
                 '>' => self.scan_double('=', Token::Greater, Token::GreaterEqual),
                 '<' => self.scan_double('=', Token::Less, Token::LessEqual),
@@ -100,7 +106,7 @@ impl<'source> Scanner<'source> {
                     }
                 }
 
-                _ => todo!(),
+                char => panic!("Unrecognized character: {char}"),
             };
 
             tokens.push(token);
