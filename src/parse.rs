@@ -14,6 +14,21 @@ impl<'source> Parser<'source> {
         }
     }
 
+    // literal * literal * literal
+    pub fn parse_factor(&mut self) -> Option<Expr> {
+        let mut lits = Vec::new();
+        let lit = self.parse_literal()?;
+
+        while matches!(self.iter.peek(), Some(Token::Star)) {
+            self.iter.next();
+            lits.push(self.parse_literal().expect("No literal after *"));
+        }
+
+        Some(lits.into_iter().fold(Expr::Lit(lit), |lhs, rhs| {
+            Expr::Binary(Binary::Mul, Box::new(lhs), Box::new(Expr::Lit(rhs)))
+        }))
+    }
+
     pub fn parse_literal(&mut self) -> Option<Lit> {
         let lit = match self.iter.peek()? {
             Token::Number(value) => Lit::Number(*value),
@@ -24,12 +39,13 @@ impl<'source> Parser<'source> {
             _ => return None,
         };
 
+        self.iter.next();
         Some(lit)
     }
 }
 
 #[derive(Debug)]
-enum Expr {
+pub enum Expr {
     Lit(Lit),
     Unary(Unary, Box<Expr>),
     Binary(Binary, Box<Expr>, Box<Expr>),
@@ -37,7 +53,7 @@ enum Expr {
 }
 
 #[derive(Debug)]
-enum Comparison {
+pub enum Comparison {
     Less,
     LessEqual,
     Equal,
@@ -46,7 +62,7 @@ enum Comparison {
 }
 
 #[derive(Debug)]
-enum Binary {
+pub enum Binary {
     Add,
     Sub,
     Mul,
@@ -54,13 +70,13 @@ enum Binary {
 }
 
 #[derive(Debug)]
-enum Unary {
+pub enum Unary {
     Negate,
     Not,
 }
 
 #[derive(Debug)]
-enum Lit {
+pub enum Lit {
     Number(f64),
     String(String),
     Bool(bool),

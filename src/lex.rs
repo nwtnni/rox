@@ -1,5 +1,5 @@
 use core::iter;
-·
+
 //  private static void run(String source) {
 //    Scanner scanner = new Scanner(source);
 //    List<Token> tokens = scanner.scanTokens();
@@ -27,6 +27,7 @@ impl<'source> Scanner<'source> {
                 ' ' | '\n' | '\t' => continue,
                 '(' => Token::LeftParen,
                 ')' => Token::RightParen,
+                '*' => Token::Star,
                 '!' => self.scan_double('=', Token::Bang, Token::BangEqual),
                 '>' => self.scan_double('=', Token::Greater, Token::GreaterEqual),
                 '<' => self.scan_double('=', Token::Less, Token::LessEqual),
@@ -120,12 +121,13 @@ impl<'source> Scanner<'source> {
     }
 }
 
-pub(crate) fn run(source: String) {
+pub(crate) fn run(source: String) -> Vec<Token> {
     let mut scanner = Scanner::new(&source);
     let tokens = scanner.scan();
-    for token in tokens {
+    for token in &tokens {
         println!("{token:?}");
     }
+    tokens
 }
 
 // class Token {
@@ -145,7 +147,7 @@ pub(crate) fn run(source: String) {
 //     return type + " " + lexeme + " " + literal;
 //   }
 // }
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[allow(unused)]
 pub enum Token {
     // Single-character tokens.
