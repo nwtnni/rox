@@ -16,17 +16,22 @@ impl<'source> Parser<'source> {
 
     // literal * literal * literal
     pub fn parse_factor(&mut self) -> Option<Expr> {
-        let mut lits = Vec::new();
-        let lit = self.parse_literal()?;
+        let mut expr = Expr::Lit(self.parse_literal()?);
 
-        while matches!(self.iter.peek(), Some(Token::Star)) {
-            self.iter.next();
-            lits.push(self.parse_literal().expect("No literal after *"));
+        while matches!(self.iter.peek(), Some(Token::Star | Token::Slash)) {
+            let token = self.iter.next();
+            let rhs = self.parse_literal().expect("No literal after * or /");
+
+            let op = match token {
+                Some(Token::Star) => Binary::Mul,
+                Some(Token::Slash) => Binary::Div,
+                _ => unreachable!(),
+            };
+
+            expr = Expr::Binary(op, Box::new(expr), Box::new(Expr::Lit(rhs)));
         }
 
-        Some(lits.into_iter().fold(Expr::Lit(lit), |lhs, rhs| {
-            Expr::Binary(Binary::Mul, Box::new(lhs), Box::new(Expr::Lit(rhs)))
-        }))
+        Some(expr)
     }
 
     pub fn parse_literal(&mut self) -> Option<Lit> {
