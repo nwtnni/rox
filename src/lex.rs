@@ -204,3 +204,17 @@ pub enum Token {
 
     Eof,
 }
+
+impl Token {
+    pub(crate) fn precedence(&self) -> Option<u8> {
+        let precedence = match self {
+            Token::Star | Token::Slash => 4,
+            Token::Minus | Token::Plus => 3,
+            Token::Greater | Token::GreaterEqual | Token::Less | Token::LessEqual => 2,
+            Token::EqualEqual | Token::BangEqual => 1,
+            _ => return None,
+        };
+
+        Some(precedence)
+    }
+}

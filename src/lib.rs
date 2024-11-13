@@ -9,5 +9,5 @@ pub fn run_file(path: String) {
     let source = std::fs::read_to_string(&path).unwrap();
     let tokens = lex::run(source);
     let mut parser = parse::Parser::new(&tokens);
-    dbg!(parser.parse_factor());
+    dbg!(parser.parse_binary(0));
 }
