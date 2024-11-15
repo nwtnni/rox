@@ -16,7 +16,7 @@ impl<'source> Parser<'source> {
 
     // literal * literal * literal
     pub fn parse_binary(&mut self, min: u8) -> Option<Expr> {
-        let mut expr = Expr::Lit(self.parse_literal()?);
+        let mut expr = self.parse_unary()?;
 
         while let Some(pow) = self.iter.peek().copied().and_then(Token::precedence) {
             if pow * 2 < min {
@@ -43,18 +43,21 @@ impl<'source> Parser<'source> {
     }
 
     pub fn parse_unary(&mut self) -> Option<Expr> {
-        let op = self
+        let Some(op) = self
             .iter
-            .next_if(|token| matches!(token, Token::Bang | Token::Minus))?;
+            .next_if(|token| matches!(token, Token::Bang | Token::Minus))
+        else {
+            return self.parse_literal().map(Expr::Lit);
+        };
 
-        let inner = self.parse_literal().expect("Expected expression");
+        let inner = self.parse_unary().expect("Expected expression");
         let op = match op {
             Token::Bang => Unary::Not,
             Token::Minus => Unary::Negate,
             _ => unreachable!(),
         };
 
-        Some(Expr::Unary(op, Box::new(Expr::Lit(inner))))
+        Some(Expr::Unary(op, Box::new(inner)))
     }
 
     pub fn parse_literal(&mut self) -> Option<Lit> {
@@ -102,7 +105,7 @@ pub enum Unary {
     Not,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Lit {
     Number(f64),
     String(String),
