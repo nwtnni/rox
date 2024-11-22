@@ -14,6 +14,41 @@ impl<'source> Parser<'source> {
         }
     }
 
+    pub fn parse_stmt(&mut self) -> Option<Stmt> {
+        match self.iter.peek()? {
+            Token::Print => {
+                self.iter.next();
+                let expr = self.parse_expr().expect("Tried to print non-expression");
+                Some(Stmt::Print(expr))
+            }
+
+            Token::LeftBrace => {
+                self.iter.next();
+                let mut stmts = Vec::new();
+                while let Some(stmt) = self.parse_stmt() {
+                    stmts.push(stmt);
+                    match self.iter.next() {
+                        Some(Token::Semicolon) => {}
+                        _ => panic!("Expected semicolon after statement"),
+                    }
+                }
+
+                match self.iter.next() {
+                    Some(Token::RightBrace) => {}
+                    _ => panic!("Expeceted closing brace after sequence!"),
+                }
+
+                Some(Stmt::Seq(stmts))
+            }
+
+            _ => None,
+        }
+    }
+
+    pub fn parse_expr(&mut self) -> Option<Expr> {
+        self.parse_binary(0)
+    }
+
     // literal * literal * literal
     pub fn parse_binary(&mut self, min: u8) -> Option<Expr> {
         let mut expr = self.parse_unary()?;
@@ -73,6 +108,12 @@ impl<'source> Parser<'source> {
         self.iter.next();
         Some(lit)
     }
+}
+
+#[derive(Debug)]
+pub enum Stmt {
+    Print(Expr),
+    Seq(Vec<Stmt>),
 }
 
 #[derive(Debug)]

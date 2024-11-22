@@ -27,6 +27,8 @@ impl<'source> Scanner<'source> {
                 ' ' | '\n' | '\t' => continue,
                 '(' => Token::LeftParen,
                 ')' => Token::RightParen,
+                '{' => Token::LeftBrace,
+                '}' => Token::RightBrace,
                 ',' => Token::Comma,
                 '-' => Token::Minus,
                 '+' => Token::Plus,
@@ -129,11 +131,7 @@ impl<'source> Scanner<'source> {
 
 pub(crate) fn run(source: String) -> Vec<Token> {
     let mut scanner = Scanner::new(&source);
-    let tokens = scanner.scan();
-    for token in &tokens {
-        println!("{token:?}");
-    }
-    tokens
+    scanner.scan()
 }
 
 // class Token {

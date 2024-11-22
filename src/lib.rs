@@ -12,7 +12,7 @@ pub fn run_file(path: String) {
     let source = std::fs::read_to_string(&path).unwrap();
     let tokens = lex::run(source);
     let mut parser = parse::Parser::new(&tokens);
-    let ast = parser.parse_binary(0).expect("Failed to parse expression");
+    let ast = parser.parse_stmt().expect("Failed to parse statement");
     let mut interpreter = Interpreter::new();
-    dbg!(interpreter.eval_expr(&ast));
+    interpreter.eval_stmt(&ast);
 }

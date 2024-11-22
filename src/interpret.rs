@@ -1,6 +1,7 @@
 use crate::parse::Binary;
 use crate::parse::Expr;
 use crate::parse::Lit;
+use crate::parse::Stmt;
 use crate::parse::Unary;
 
 pub struct Interpreter {}
@@ -12,6 +13,25 @@ impl Interpreter {
 }
 
 impl Interpreter {
+    pub fn eval_stmt(&mut self, stmt: &Stmt) {
+        match stmt {
+            Stmt::Print(expr) => {
+                let value = self.eval_expr(expr);
+                match value {
+                    Lit::String(string) => println!("{}", string),
+                    Lit::Bool(bool) => println!("{}", bool),
+                    Lit::Nil => println!("nil"),
+                    Lit::Number(num) => println!("{}", num),
+                }
+            }
+            Stmt::Seq(stmts) => {
+                for stmt in stmts {
+                    self.eval_stmt(stmt);
+                }
+            }
+        }
+    }
+
     pub fn eval_expr(&mut self, expr: &Expr) -> Lit {
         match expr {
             Expr::Lit(lit) => lit.clone(),
@@ -29,21 +49,21 @@ impl Interpreter {
                 }
             }
             Expr::Binary(op, lhs, rhs) => {
-                let vLeft = self.eval_expr(lhs);
-                let nLeft = match vLeft {
+                let v_left = self.eval_expr(lhs);
+                let n_left = match v_left {
                     Lit::Number(n) => n,
                     _ => panic!("Tried to negate non-number"),
                 };
-                let vRight = self.eval_expr(rhs);
-                let nRight = match vRight {
+                let v_right = self.eval_expr(rhs);
+                let n_right = match v_right {
                     Lit::Number(n) => n,
                     _ => panic!("Tried to negate non-number"),
                 };
                 match op {
-                    Binary::Add => Lit::Number(nLeft + nRight),
-                    Binary::Sub => Lit::Number(nLeft - nRight),
-                    Binary::Mul => Lit::Number(nLeft * nRight),
-                    Binary::Div => Lit::Number(nLeft / nRight),
+                    Binary::Add => Lit::Number(n_left + n_right),
+                    Binary::Sub => Lit::Number(n_left - n_right),
+                    Binary::Mul => Lit::Number(n_left * n_right),
+                    Binary::Div => Lit::Number(n_left / n_right),
                 }
             }
         }
