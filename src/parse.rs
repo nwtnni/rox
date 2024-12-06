@@ -41,6 +41,24 @@ impl<'source> Parser<'source> {
                 Some(Stmt::Seq(stmts))
             }
 
+            Token::Var => {
+                self.iter.next();
+
+                let Some(Token::Identifier(var)) = self.iter.next() else {
+                    panic!("Expected identifier")
+                };
+
+                if !matches!(self.iter.next(), Some(Token::Equal)) {
+                    panic!("Expected =")
+                }
+
+                let expr = self.parse_expr().expect("No expression found");
+                Some(Stmt::Assign {
+                    lhs: var.clone(),
+                    rhs: expr,
+                })
+            }
+
             _ => None,
         }
     }
@@ -97,6 +115,7 @@ impl<'source> Parser<'source> {
 
     pub fn parse_literal(&mut self) -> Option<Lit> {
         let lit = match self.iter.peek()? {
+            Token::Identifier(ident) => Lit::Var(ident.clone()),
             Token::Number(value) => Lit::Number(*value),
             Token::String(value) => Lit::String(value.clone()),
             Token::True => Lit::Bool(true),
@@ -114,6 +133,7 @@ impl<'source> Parser<'source> {
 pub enum Stmt {
     Print(Expr),
     Seq(Vec<Stmt>),
+    Assign { lhs: String, rhs: Expr },
 }
 
 #[derive(Debug)]
@@ -148,6 +168,7 @@ pub enum Unary {
 
 #[derive(Clone, Debug)]
 pub enum Lit {
+    Var(String),
     Number(f64),
     String(String),
     Bool(bool),
